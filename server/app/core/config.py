@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     DATABASE_URL: str = (
-        "postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
     API_V1_STR: str = "/api/v1"

@@ -1,8 +1,11 @@
 from app.core.database import Base
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.sql import func
 from datetime import datetime
+from typing import List
+from app.models.wishlist import Wishlist
+
 
 max_string_length = 255
 max_password_length = 255
@@ -25,4 +28,7 @@ class User(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=func.now(), onupdate=func.now()
+    )
+    wishlists: Mapped[List["Wishlist"]] = relationship(
+        "Wishlist", back_populates="user"
     )

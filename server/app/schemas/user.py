@@ -12,10 +12,14 @@ class UserLogin(BaseModel):
     )
 
 
-class UserCreate(UserLogin):
+class User(UserLogin):
     first_name: str
     last_name: str
     phone_number: str
+
+class UserCreate(User):
+    pass
+
 
 
 class UserResponse(BaseModel):

@@ -11,9 +11,8 @@ from app.core.database import Base
 
 # Important for alembic to find the models
 # This is the only way to register the models with Base.metadata
-from app.models.user import (
-    User,
-)  # Import models so they are registered with Base.metadata
+# Import models so they are registered with Base.metadata
+from app.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

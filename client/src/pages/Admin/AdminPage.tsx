@@ -1,18 +1,66 @@
-import React from 'react';
-import { Box, Typography, Paper, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, Chip, Button, Container } from '@mui/material';
+import React, { useState, useMemo } from 'react';
+import {
+    Box,
+    Typography,
+    Paper,
+    Grid,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Avatar,
+    Chip,
+    Button,
+    Container,
+    TextField,
+    TablePagination,
+    CircularProgress,
+} from '@mui/material';
 import { Users, ShoppingBag, TrendingUp, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const MOCK_USERS = [
-    { id: 1, name: 'Alice Smith', email: 'alice@example.com', role: 'admin', status: 'active', avatar: 'AS' },
-    { id: 2, name: 'Bob Johnson', email: 'bob@example.com', role: 'user', status: 'active', avatar: 'BJ' },
-    { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'user', status: 'inactive', avatar: 'CB' },
-    { id: 4, name: 'Diana Ross', email: 'diana@example.com', role: 'user', status: 'active', avatar: 'DR' },
-];
+import { useQuery } from '@tanstack/react-query';
+import { getUsers } from '../../api/users';
+import type { User } from '../../types/user';
 
 const AdminPage: React.FC = () => {
+    const { data: users, isLoading, isError } = useQuery<User[]>({
+        queryKey: ['users'],
+        queryFn: getUsers,
+    });
+
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(event.target.value);
+    };
+
+    const filteredUsers = useMemo(() => {
+        if (!users) return [];
+        return users.filter(user =>
+            `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [users, searchTerm]);
+
+    const paginatedUsers = useMemo(() => {
+        return filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    }, [filteredUsers, page, rowsPerPage]);
+
+    const handleChangePage = (_: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
     const stats = [
-        { label: 'Total Users', value: '1,234', icon: <Users size={24} />, color: '#6366f1' },
+        { label: 'Total Users', value: users?.length ?? '...', icon: <Users size={24} />, color: '#6366f1' },
         { label: 'Total Orders', value: '856', icon: <ShoppingBag size={24} />, color: '#ec4899' },
         { label: 'Revenue', value: '$45,200', icon: <TrendingUp size={24} />, color: '#10b981' },
         { label: 'Pending Issues', value: '12', icon: <AlertCircle size={24} />, color: '#f59e0b' },
@@ -32,7 +80,7 @@ const AdminPage: React.FC = () => {
 
                 <Grid container spacing={4} sx={{ mb: 6 }}>
                     {stats.map((stat, index) => (
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.label}>
+                        <Grid size={{ sm: 6, md: 3 }} key={stat.label}>
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -60,46 +108,91 @@ const AdminPage: React.FC = () => {
                     User Management
                 </Typography>
 
-                <TableContainer component={Paper} sx={{ borderRadius: 4, overflow: 'hidden' }}>
-                    <Table>
-                        <TableHead sx={{ bgcolor: 'rgba(99, 102, 241, 0.05)' }}>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 700 }}>User</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {MOCK_USERS.map((user) => (
-                                <TableRow key={user.id} hover>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ bgcolor: user.role === 'admin' ? 'primary.main' : 'secondary.main', width: 32, height: 32, fontSize: '0.8rem' }}>
-                                                {user.avatar}
-                                            </Avatar>
-                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.name}</Typography>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell sx={{ textTransform: 'capitalize' }}>{user.role}</TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={user.status}
-                                            size="small"
-                                            color={user.status === 'active' ? 'success' : 'default'}
-                                            sx={{ fontWeight: 600 }}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button size="small">Edit</Button>
-                                    </TableCell>
+                <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                    <Box sx={{ p: 2 }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="Search users..."
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                        />
+                    </Box>
+                    <TableContainer>
+                        <Table>
+                            <TableHead sx={{ bgcolor: 'rgba(99, 102, 241, 0.05)' }}>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 700 }}>User</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                            </TableHead>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} align="center">
+                                            <CircularProgress />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : isError ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} align="center">
+                                            <Typography color="error">Error fetching users.</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    paginatedUsers.map((user) => (
+                                        <TableRow key={user.id} hover>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32, fontSize: '0.8rem' }}>
+                                                        {`${user.first_name.charAt(0)}${user.last_name.charAt(0)}`}
+                                                    </Avatar>
+                                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                        {`${user.first_name} ${user.last_name}`}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>{user.phone_number}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={user.is_active ? 'Active' : 'Inactive'}
+                                                    size="small"
+                                                    color={user.is_active ? 'success' : 'default'}
+                                                    sx={{ fontWeight: 600 }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={user.is_admin ? 'Admin' : 'User'}
+                                                    size="small"
+                                                    color={user.is_admin ? 'primary' : 'default'}
+                                                    sx={{ fontWeight: 600 }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button size="small">Edit</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={filteredUsers.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                </Paper>
             </Container>
         </Box>
     );
